@@ -1,1 +1,1 @@
-# py_thinq_openapi_tester
+# LG ThinQ OpenAPI (Smart Solution API)
