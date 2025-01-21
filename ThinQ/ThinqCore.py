@@ -9,8 +9,8 @@ from ThinqCommon import Callback
 class ThinqCore(object):
     def __init__(self):
         super().__init__()
-        self._api = ThinqAPI()
         self._config_file_path: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
+        self._api = ThinqAPI(self._config_file_path)
         self._load_config()
         self._device_list: List[ThinqDevice] = list()
         self.sig_device_list_changed = Callback()
@@ -24,24 +24,10 @@ class ThinqCore(object):
         self._save_config()
 
     def _load_config(self):
-        if not os.path.isfile(self._config_file_path):
-            self._save_config()
-        with open(self._config_file_path, 'r') as fp:
-            load_obj = json.load(fp)
-        if isinstance(load_obj, dict):
-            self._api.personal_access_token = load_obj.get("personal_access_token", "")
-            self._api.client_id = load_obj.get("client_id", "yogyui-thinq-api-tester")
-            self._api.api_key = load_obj.get("api_key", "v6GFvkweNo7DK7yD3ylIZ9w52aKBU0eJ7wLXkSR3")
+        pass
 
     def _save_config(self):
-        save_obj = {
-            "personal_access_token": self._api.personal_access_token,
-            "client_id": self._api.client_id,
-            "api_key": self._api.api_key,
-        }
-
-        with open(self._config_file_path, 'w') as fp:
-            json.dump(save_obj, fp, indent=4)
+        pass
 
     def set_api_personal_access_token(self, token: str):
         self._api.personal_access_token = token
@@ -95,17 +81,21 @@ class ThinqCore(object):
     def unregister_client(self):
         self._api.unregister_client()
 
+    def connect_mqtt_broker(self):
+        self._api.connect_mqtt_broker()
+
     @property
     def device_list(self) -> List[ThinqDevice]:
         return self._device_list
 
 
 if __name__ == '__main__':
+    # test codes
     core_ = ThinqCore()
     core_.unregister_client()
     core_.register_client()
     core_.issue_client_certificate()
-
+    core_.connect_mqtt_broker()
     """
     core_.query_device_list()
     
