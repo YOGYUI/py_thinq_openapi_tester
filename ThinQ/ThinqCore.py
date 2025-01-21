@@ -84,6 +84,9 @@ class ThinqCore(object):
     def connect_mqtt_broker(self):
         self._api.connect_mqtt_broker()
 
+    def disconnect_mqtt_broker(self):
+        self._api.disconnect_mqtt_broker()
+
     @property
     def device_list(self) -> List[ThinqDevice]:
         return self._device_list
@@ -96,6 +99,9 @@ if __name__ == '__main__':
     core_.register_client()
     core_.issue_client_certificate()
     core_.connect_mqtt_broker()
+    import time
+    time.sleep(5)
+    core_.disconnect_mqtt_broker()
     """
     core_.query_device_list()
     

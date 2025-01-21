@@ -337,10 +337,21 @@ class ThinqAPI(object):
             pass  # TODO
 
     def connect_mqtt_broker(self):
-        rootca_pem_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'aws_root_ca.pem')
-        privkey_pem_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "privkey.pem")
-        csr_pem_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "csr.pem")
-        self._mqtt_client.tls_set(ca_certs=rootca_pem_path, certfile=csr_pem_path, keyfile=privkey_pem_path)
+        try:
+            rootca_pem_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'aws_root_ca.pem')
+            cert_pem_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "aws_cert.pem")
+            privkey_pem_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "privkey.pem")
+            self._mqtt_client.tls_set(ca_certs=rootca_pem_path, certfile=cert_pem_path, keyfile=privkey_pem_path)
+
+            # format: mqtts://xxxxxxxxxxxxxx-ats.iot.ap-northeast-2.amazonaws.com:8883
+            mqttServer: str = self._domain_names.get("mqttServer")[8:]
+            idx = mqttServer.rfind(':')
+            host = mqttServer[:idx]
+            port = int(mqttServer[idx + 1:])
+            self._mqtt_client.connect(host=host, port=port)
+            self._mqtt_client.loop_start()
+        except Exception as e:
+            raise ThinqException(f"[Connect MQTT Broker] Failed: {e}")
 
     def disconnect_mqtt_broker(self):
         if self._mqtt_client.is_connected():
@@ -348,16 +359,18 @@ class ThinqAPI(object):
             self._mqtt_client.disconnect()
 
     def _on_mqtt_client_connect(self, _, userdata, flags, rc):
-        pass
+        print('connected')
+        for topic in self._mqtt_topic_subscriptions:
+            self._mqtt_client.subscribe(topic)
 
     def _on_mqtt_client_disconnect(self, _, userdata, rc):
-        pass
+        print('disconnected')
 
     def _on_mqtt_client_subscribe(self, _, userdata, mid, granted_qos):
-        pass
+        print('subscribe')
 
     def _on_mqtt_client_message(self, _, userdata, message):
-        pass
+        print('message')
 
     @property
     def base_url(self) -> str:
