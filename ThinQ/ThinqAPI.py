@@ -5,7 +5,7 @@ import requests
 from typing import List
 from OpenSSL import crypto
 import paho.mqtt.client as mqtt
-from ThinqCommon import ThinqException
+from ThinqCommon import ThinqException, Callback
 
 
 class ThinqAPI(object):
@@ -33,10 +33,16 @@ class ThinqAPI(object):
         self._mqtt_client = mqtt.Client(client_id=self.client_id)
         self._mqtt_client.on_connect = self._on_mqtt_client_connect
         self._mqtt_client.on_disconnect = self._on_mqtt_client_disconnect
+        self._mqtt_client.on_connect_fail = self._on_mqtt_client_connect_failed
         self._mqtt_client.on_subscribe = self._on_mqtt_client_subscribe
+        self._mqtt_client.on_publish = self._on_mqtt_client_publish
         self._mqtt_client.on_message = self._on_mqtt_client_message
+        self._mqtt_client.on_log = self._on_mqtt_client_log
         self._mqtt_topic_subscriptions: List[str] = list()
         self._mqtt_topic_publications: List[str] = list()
+
+        self.sig_mqtt_connected = Callback(bool)
+        self.sig_mqtt_message = Callback()
 
         self._load_config()
         self._query_domain_names()
@@ -358,19 +364,43 @@ class ThinqAPI(object):
             self._mqtt_client.loop_stop()
             self._mqtt_client.disconnect()
 
-    def _on_mqtt_client_connect(self, _, userdata, flags, rc):
+    def _on_mqtt_client_connect(self, client: mqtt.Client, userdata, flags, rc):
         print('connected')
+        self.sig_mqtt_connected.emit(True)
         for topic in self._mqtt_topic_subscriptions:
-            self._mqtt_client.subscribe(topic)
+            client.subscribe(topic)
 
     def _on_mqtt_client_disconnect(self, _, userdata, rc):
+        self.sig_mqtt_connected.emit(False)
         print('disconnected')
+
+    def _on_mqtt_client_connect_failed(self, _, userdata):
+        self.sig_mqtt_connected.emit(False)
 
     def _on_mqtt_client_subscribe(self, _, userdata, mid, granted_qos):
         print('subscribe')
 
-    def _on_mqtt_client_message(self, _, userdata, message):
+    def _on_mqtt_client_publish(self, _, userdata, mid):
+        pass
+
+    def _on_mqtt_client_message(self, _, userdata, message: mqtt.MQTTMessage):
+        # message.payload
         print('message')
+
+    def _on_mqtt_client_log(self, _, userdata, level, buf):
+        if level == 0x01:  # MQTT_LOG_INFO
+            level_str = 'I'
+        elif level == 0x02:  # MQTT_LOG_NOTICE
+            level_str = 'N'
+        elif level == 0x04:  # MQTT_LOG_WARNING
+            level_str = 'W'
+        elif level == 0x08:  # MQTT_LOG_ERR
+            level_str = 'E'
+        elif level == 0x10:  # MQTT_LOG_DEBUG
+            level_str = 'D'
+        else:
+            level_str = '?'
+        print(f"[{level_str}] {buf}")
 
     @property
     def base_url(self) -> str:
