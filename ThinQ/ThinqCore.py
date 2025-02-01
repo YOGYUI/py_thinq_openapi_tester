@@ -3,7 +3,7 @@ import json
 from typing import List, Union
 from ThinqAPI import ThinqAPI
 from ThinqDevice import ThinqDevice, createThinqDevice
-from ThinqCommon import Callback
+from ThinqCommon import Callback, ThinqException
 
 
 class ThinqCore(object):
@@ -14,12 +14,31 @@ class ThinqCore(object):
         self._load_config()
         self._device_list: List[ThinqDevice] = list()
         self.sig_device_list_changed = Callback()
-        self.initialize()
+        # self.initialize()
 
-    def initialize(self):
-        pass
+    def initialize(self, personal_access_token: str = None):
+        if personal_access_token is not None:
+            self.set_api_personal_access_token(personal_access_token)
+        try:
+            self.unregister_client()
+        except ThinqException:
+            pass
+        except Exception as e:
+            raise ThinqException(f"[core::initialize::unregister_client] Exception occurred ({e})")
+        self.register_client()
+        self.issue_client_certificate()
+        self.connect_mqtt_broker()
 
     def release(self):
+        for dev in self._device_list:
+            pass
+        try:
+            self.unregister_client()
+        except ThinqException:
+            pass
+        except Exception as e:
+            raise ThinqException(f"[core::release::unregister_client] Exception occurred ({e})")
+        self.disconnect_mqtt_broker()
         self._api.release()
         self._save_config()
 
@@ -31,7 +50,9 @@ class ThinqCore(object):
 
     def set_api_personal_access_token(self, token: str):
         self._api.personal_access_token = token
-        self._save_config()
+
+    def get_api_personal_access_token(self) -> str:
+        return self._api.personal_access_token
 
     def _find_device_by_id(self, device_id: str) -> Union[ThinqDevice, None]:
         find = list(filter(lambda x: x.id == device_id, self._device_list))

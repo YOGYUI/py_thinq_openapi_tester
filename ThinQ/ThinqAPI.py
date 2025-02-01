@@ -48,7 +48,6 @@ class ThinqAPI(object):
         self._query_domain_names()
 
     def release(self):
-        self.disconnect_mqtt_broker()
         self._session.close()
 
     def _load_config(self):
@@ -418,6 +417,7 @@ class ThinqAPI(object):
     def personal_access_token(self, token: str):
         self._config["personal_access_token"] = token
         self._generate_api_header()
+        self._save_config()
 
     @property
     def client_id(self) -> str:
@@ -427,6 +427,7 @@ class ThinqAPI(object):
     def client_id(self, client_id: str):
         self._config["client_id"] = client_id
         self._generate_api_header()
+        self._save_config()
 
     @property
     def api_key(self) -> str:
@@ -436,6 +437,7 @@ class ThinqAPI(object):
     def api_key(self, key: str):
         self._config["api_key"] = key
         self._generate_api_header()
+        self._save_config()
 
     @property
     def request_header(self) -> dict:

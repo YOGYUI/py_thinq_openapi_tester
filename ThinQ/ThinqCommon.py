@@ -40,3 +40,12 @@ class Callback(object):
                     self._args, args, validTypes))
         if self._callback is not None:
             self._callback(*args)
+
+
+class Logger:
+    def __init__(self):
+        pass
+
+
+def GetLogger() -> Logger:
+    pass
